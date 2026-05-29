@@ -35,6 +35,7 @@ type globals struct {
 	plain      bool
 	quiet      bool
 	noColor    bool
+	showVersion bool
 	timeout    time.Duration
 	traceHTTP  bool
 	dryRun     bool
@@ -85,6 +86,13 @@ func newRootCommand(rc *runtime) *cobra.Command {
 		Short:         "{{ cookiecutter.project_description }}",
 		SilenceUsage:  true,
 		SilenceErrors: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if rc.g.showVersion {
+				return rc.writeVersion()
+			}
+			_ = cmd.Help()
+			return errUsage
+		},
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			if commandSkipsClient(cmd) {
 				rc.out = output.New(rc.stdout, rc.stderr, rc.g.asJSON, rc.g.plain, rc.g.quiet, rc.g.noColor)
@@ -101,6 +109,7 @@ func newRootCommand(rc *runtime) *cobra.Command {
 	flags.BoolVar(&rc.g.plain, "plain", false, "emit stable plain text where available")
 	flags.BoolVarP(&rc.g.quiet, "quiet", "q", false, "suppress non-essential output")
 	flags.BoolVar(&rc.g.noColor, "no-color", false, "disable color")
+	flags.BoolVar(&rc.g.showVersion, "version", false, "print version and exit")
 	flags.DurationVar(&rc.g.timeout, "timeout", 30*time.Second, "HTTP timeout")
 	flags.BoolVar(&rc.g.traceHTTP, "trace-http", false, "log HTTP requests to stderr without secrets")
 	flags.BoolVar(&rc.g.dryRun, "dry-run", false, "refuse non-GET HTTP requests")
@@ -163,24 +172,28 @@ func newVersionCommand(rc *runtime) *cobra.Command {
 		Use:   "version",
 		Short: "Print version information",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			payload := map[string]string{
-				"version": version,
-				"commit":  commit,
-				"date":    date,
-			}
-			if rc.out.IsJSON() {
-				return rc.out.JSON(payload)
-			}
-			if rc.out.IsPlain() {
-				rc.out.Printf("%s\n", version)
-				return nil
-			}
-			rc.out.Printf("{{ cookiecutter.binary_name }} version %s\n", version)
-			rc.out.Printf("commit: %s\n", commit)
-			rc.out.Printf("built:  %s\n", date)
-			return nil
+			return rc.writeVersion()
 		},
 	}
+}
+
+func (rc *runtime) writeVersion() error {
+	payload := map[string]string{
+		"version": version,
+		"commit":  commit,
+		"date":    date,
+	}
+	if rc.out.IsJSON() {
+		return rc.out.JSON(payload)
+	}
+	if rc.out.IsPlain() {
+		rc.out.Printf("%s\n", version)
+		return nil
+	}
+	rc.out.Printf("{{ cookiecutter.binary_name }} version %s\n", version)
+	rc.out.Printf("commit: %s\n", commit)
+	rc.out.Printf("built:  %s\n", date)
+	return nil
 }
 
 func newCompletionCommand(root *cobra.Command) *cobra.Command {

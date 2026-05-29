@@ -25,7 +25,7 @@ func New(stdout, stderr io.Writer, asJSON, plain, quiet, noColor bool) *Formatte
 		asJSON:  asJSON,
 		plain:   plain,
 		quiet:   quiet,
-		noColor: noColor || os.Getenv("NO_COLOR") != "",
+		noColor: noColor || os.Getenv("NO_COLOR") != "" || os.Getenv("TERM") == "dumb",
 	}
 }
 

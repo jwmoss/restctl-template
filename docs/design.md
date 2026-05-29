@@ -29,6 +29,7 @@ The generated CLI follows the Command Line Interface Guidelines baseline:
 - Send primary output to stdout.
 - Send errors, logs, traces, and diagnostics to stderr.
 - Show help on `-h` and `--help`.
+- Print version information with root `--version` and the `version` command.
 - Provide machine-readable `--json`.
 - Provide stable text where useful through `--plain`.
 
@@ -44,6 +45,12 @@ The generated REST client handles:
 - timeout control
 - dry-run refusal for non-GET methods
 - optional HTTP tracing without dumping auth headers
+
+## Terminal Behavior
+
+- Disable color when `NO_COLOR` is set, `TERM=dumb`, or `--no-color` is passed.
+- Keep shell completion available from the generated `completion` command.
+- Prefer stdin/file inputs for secrets and payloads over command-line flags.
 
 ## Why Cookiecutter
 

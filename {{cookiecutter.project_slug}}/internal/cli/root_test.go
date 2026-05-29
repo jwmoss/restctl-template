@@ -22,6 +22,17 @@ func TestVersionJSON(t *testing.T) {
 	}
 }
 
+func TestVersionFlag(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	code := Execute(context.Background(), []string{"--version"}, strings.NewReader(""), &stdout, &stderr)
+	if code != exitOK {
+		t.Fatalf("code = %d stderr = %s", code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "version dev") {
+		t.Fatalf("stdout = %s", stdout.String())
+	}
+}
+
 func TestDoctor(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(`{"status":"ok"}`))

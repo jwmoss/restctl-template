@@ -75,11 +75,14 @@ environment, a `0600` config file, or stdin-backed setup.
 
 ```bash
 {{ cookiecutter.binary_name }} --help
+{{ cookiecutter.binary_name }} --version
 {{ cookiecutter.binary_name }} version
 {{ cookiecutter.binary_name }} doctor
 {{ cookiecutter.binary_name }} {{ cookiecutter.resource_name_plural }} list
 {{ cookiecutter.binary_name }} {{ cookiecutter.resource_name_plural }} get 123
 {{ cookiecutter.binary_name }} raw GET /v1/me --json
+printf '%s\n' "$TOKEN" | {{ cookiecutter.binary_name }} config init --token-stdin --force
+{{ cookiecutter.binary_name }} completion zsh > ~/.zfunc/_{{ cookiecutter.binary_name }}
 ```
 
 ## Global Flags
@@ -88,6 +91,7 @@ environment, a `0600` config file, or stdin-backed setup.
 | --- | --- |
 | `--config` | Config file path |
 | `--base-url` | API base URL override |
+| `--version` | Print version information |
 | `--json` | Emit JSON to stdout |
 | `--plain` | Emit stable plain text where available |
 | `--quiet`, `-q` | Suppress non-essential output |

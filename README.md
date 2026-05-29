@@ -3,14 +3,14 @@
 Cookiecutter template for Go CLI tools that wrap REST APIs.
 
 `restctl-template` is a starter kit for quickly spinning up repeatable,
-scriptable, release-ready command-line clients. It is inspired by the ecosystem
-shape of `openclaw/crawlkit`, the template discipline of Trail of Bits
-`cookiecutter-python`, and the REST CLI patterns in `unraidctl` and `skycli`.
+scriptable, release-ready command-line clients for REST APIs. It provides a
+ready-to-customize repository skeleton with command structure, client plumbing,
+configuration, tests, automation, and publishing defaults already wired in.
 
 The generated project includes:
 
 - Cobra command structure with `config`, `doctor`, `raw`, example resource,
-  `completion`, and `version` commands.
+  `completion`, `version`, and root `--version` support.
 - A small internal REST client with auth headers, request timeouts, JSON helpers,
   dry-run blocking for mutating calls, API error wrapping, and optional HTTP
   tracing.
