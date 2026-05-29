@@ -1,0 +1,20 @@
+name: Feature request
+description: Suggest a reusable template feature
+title: "[feature]: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use case
+      description: Which generated REST CLI would benefit?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: What should the template generate?
+    validations:
+      required: true

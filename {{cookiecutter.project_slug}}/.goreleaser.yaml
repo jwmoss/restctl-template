@@ -1,0 +1,101 @@
+version: 2
+
+project_name: {{ cookiecutter.binary_name }}
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: {{ cookiecutter.binary_name }}
+    main: ./cmd/{{ cookiecutter.binary_name }}
+    binary: {{ cookiecutter.binary_name }}
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    goos:
+      - darwin
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X {{ cookiecutter.module_path }}/internal/cli.version={% raw %}{{ .Version }}{% endraw %}
+      - -X {{ cookiecutter.module_path }}/internal/cli.commit={% raw %}{{ .ShortCommit }}{% endraw %}
+      - -X {{ cookiecutter.module_path }}/internal/cli.date={% raw %}{{ .Date }}{% endraw %}
+
+archives:
+  - id: {{ cookiecutter.binary_name }}
+    ids:
+      - {{ cookiecutter.binary_name }}
+    formats:
+      - tar.gz
+    name_template: "{% raw %}{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}{% endraw %}"
+    format_overrides:
+      - goos: windows
+        formats:
+          - zip
+    files:
+      - LICENSE
+      - README.md
+      - CHANGELOG.md
+
+checksum:
+  name_template: checksums.txt
+
+snapshot:
+  version_template: "{% raw %}{{ incpatch .Version }}-next{% endraw %}"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+      - "Merge pull request"
+      - "Merge branch"
+
+release:
+  github:
+    owner: {{ cookiecutter.github_owner }}
+    name: {{ cookiecutter.github_repo }}
+  prerelease: auto
+  name_template: "{% raw %}{{ .ProjectName }} v{{ .Version }}{% endraw %}"
+
+{% if cookiecutter.homebrew_package_type == "formula" -%}
+brews:
+  - name: {{ cookiecutter.binary_name }}
+    ids:
+      - {{ cookiecutter.binary_name }}
+    repository:
+      owner: {{ cookiecutter.homebrew_tap_owner }}
+      name: {{ cookiecutter.homebrew_tap_repo }}
+      token: "{% raw %}{{ .Env.HOMEBREW_TAP_TOKEN }}{% endraw %}"
+    directory: Formula
+    homepage: "https://github.com/{{ cookiecutter.github_owner }}/{{ cookiecutter.github_repo }}"
+    description: "{{ cookiecutter.project_description }}"
+    license: {{ cookiecutter.license }}
+    install: |
+      bin.install "{{ cookiecutter.binary_name }}"
+    test: |
+      system "#{bin}/{{ cookiecutter.binary_name }}", "version"
+{% elif cookiecutter.homebrew_package_type == "cask" -%}
+homebrew_casks:
+  - name: {{ cookiecutter.binary_name }}
+    ids:
+      - {{ cookiecutter.binary_name }}
+    repository:
+      owner: {{ cookiecutter.homebrew_tap_owner }}
+      name: {{ cookiecutter.homebrew_tap_repo }}
+      token: "{% raw %}{{ .Env.HOMEBREW_TAP_TOKEN }}{% endraw %}"
+    directory: Casks
+    homepage: "https://github.com/{{ cookiecutter.github_owner }}/{{ cookiecutter.github_repo }}"
+    description: "{{ cookiecutter.project_description }}"
+    license: {{ cookiecutter.license }}
+    binaries:
+      - {{ cookiecutter.binary_name }}
+{% endif -%}

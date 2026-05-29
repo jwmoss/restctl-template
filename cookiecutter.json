@@ -1,0 +1,48 @@
+{
+  "project_name": "Acme API CLI",
+  "__project_slug": "{{ cookiecutter.project_name.lower().replace(' ', '-').replace('_', '-').replace('.', '-') }}",
+  "project_slug": "{{ cookiecutter.__project_slug }}",
+  "binary_name": "{{ cookiecutter.project_slug }}",
+  "module_path": "github.com/jwmoss/{{ cookiecutter.project_slug }}",
+  "project_description": "Command-line client for the Acme REST API",
+  "api_name": "Acme",
+  "api_base_url": "https://api.example.com",
+  "api_auth_header": "Authorization",
+  "api_auth_scheme": "Bearer",
+  "__env_prefix": "{{ cookiecutter.project_slug.upper().replace('-', '_') }}",
+  "env_prefix": "{{ cookiecutter.__env_prefix }}",
+  "config_filename": "config.yaml",
+  "health_path": "/health",
+  "resource_name": "resource",
+  "resource_name_plural": "resources",
+  "resource_path": "/v1/resources",
+  "github_owner": "jwmoss",
+  "github_repo": "{{ cookiecutter.project_slug }}",
+  "homebrew_tap_owner": "{{ cookiecutter.github_owner }}",
+  "homebrew_tap_repo": "homebrew-tap",
+  "homebrew_package_type": [
+    "cask",
+    "formula",
+    "none"
+  ],
+  "author_name": "Jonathan Moss",
+  "author_email": "",
+  "go_version": "1.24",
+  "license": [
+    "MIT",
+    "Apache-2.0",
+    "Proprietary"
+  ],
+  "__prompts__": {
+    "project_name": "Human-readable CLI name",
+    "project_slug": "Repository directory and GitHub repo slug",
+    "binary_name": "Executable command name",
+    "module_path": "Go module path",
+    "project_description": "One-line project description",
+    "api_name": "API/service display name",
+    "api_base_url": "Default API base URL",
+    "env_prefix": "Environment variable prefix, e.g. UNRAIDCTL",
+    "resource_name_plural": "Example resource command name",
+    "homebrew_package_type": "Homebrew publishing style"
+  }
+}

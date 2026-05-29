@@ -1,0 +1,20 @@
+name: Bug report
+description: Report a template or generated-project bug
+title: "[bug]: "
+labels:
+  - bug
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What happened?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction
+      description: Exact generation options and commands.
+    validations:
+      required: true
