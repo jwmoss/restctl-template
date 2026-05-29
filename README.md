@@ -97,6 +97,7 @@ Create the tap repo once, add a `HOMEBREW_TAP_TOKEN` secret to generated
 projects, then push semver tags such as `v0.1.0`.
 
 See [docs/homebrew.md](docs/homebrew.md) for the generated release contract.
+See [docs/ecosystem.md](docs/ecosystem.md) for the longer-term ecosystem shape.
 
 ## License
 

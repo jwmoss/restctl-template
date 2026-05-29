@@ -14,21 +14,21 @@
 go install {{ cookiecutter.module_path }}/cmd/{{ cookiecutter.binary_name }}@latest
 ```
 
-{% if cookiecutter.homebrew_package_type == "formula" -%}
+{% if cookiecutter.homebrew_package_type == "formula" %}
 ### Homebrew
 
 ```bash
 brew tap {{ cookiecutter.homebrew_tap_owner }}/tap
 brew install {{ cookiecutter.homebrew_tap_owner }}/tap/{{ cookiecutter.binary_name }}
 ```
-{% elif cookiecutter.homebrew_package_type == "cask" -%}
+{% elif cookiecutter.homebrew_package_type == "cask" %}
 ### Homebrew
 
 ```bash
 brew tap {{ cookiecutter.homebrew_tap_owner }}/tap
 brew install --cask {{ cookiecutter.homebrew_tap_owner }}/tap/{{ cookiecutter.binary_name }}
 ```
-{% endif -%}
+{% endif %}
 
 ### Source
 
