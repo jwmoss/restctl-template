@@ -27,7 +27,7 @@
   ],
   "author_name": "Jonathan Moss",
   "author_email": "",
-  "go_version": "1.24",
+  "go_version": "1.27.1",
   "license": [
     "MIT",
     "Apache-2.0",
