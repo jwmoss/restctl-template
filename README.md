@@ -81,6 +81,8 @@ The most important prompts are:
 
 Install Go, uv, and the GoReleaser version from
 `{{cookiecutter.project_slug}}/.goreleaser-version`.
+The default Go version is the supported CI baseline.
+If you select an older `go_version`, also align the audit tools with that toolchain.
 
 Run the template self-test:
 

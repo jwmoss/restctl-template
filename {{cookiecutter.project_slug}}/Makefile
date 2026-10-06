@@ -30,7 +30,7 @@ tidy-check:
 check: fmt-check tidy-check vet test build
 
 release-tool-check:
-	@$(GORELEASER) --version | grep -Eq "^GitVersion: +$(GORELEASER_VERSION:v%=%)$$" || { echo "Install GoReleaser $(GORELEASER_VERSION)"; exit 1; }
+	@$(GORELEASER) --version | grep -Eq "^GitVersion: +v?$(subst .,[.],$(GORELEASER_VERSION:v%=%))$$" || { echo "Install GoReleaser $(GORELEASER_VERSION)"; exit 1; }
 
 release-check: release-tool-check
 	$(GORELEASER) check{% if cookiecutter.homebrew_package_type == "formula" %} || test "$$?" -eq 2{% endif %}
