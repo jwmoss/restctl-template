@@ -1,7 +1,17 @@
 # Downstream consistency and migration
 
 Source snapshot: 2026-10-06. This report compares five public CLI repositories.
-Template changes affect new projects only. Existing repositories require separate changes.
+Template changes affect new projects only. These follow-up pull requests apply the shared fixes to existing repositories:
+
+| Repository | Follow-up |
+| --- | --- |
+| Goveetl | [PR #10](https://github.com/jwmoss/goveetl/pull/10) |
+| EDC | [PR #9](https://github.com/jwmoss/edcctl/pull/9) |
+| Unraidctl | [PR #27](https://github.com/jwmoss/unraidctl/pull/27) |
+| ClassReach | [PR #12](https://github.com/jwmoss/classreach/pull/12) |
+| Skycli | [PR #21](https://github.com/jwmoss/skycli/pull/21) |
+
+The sections below retain the original audit findings. Each repository keeps its provider-specific behavior and config paths.
 
 ## Shared fixes in this update
 
@@ -18,7 +28,7 @@ The template also repairs local flag validation, usage exits, selected config pa
 Its tests verify these behaviors through the compiled executable.
 The transport tests separately cover response limits and custom HTTP client policies.
 
-## Existing repositories: recommended next changes
+## Original recommendations
 
 ### Goveetl — highest priority
 

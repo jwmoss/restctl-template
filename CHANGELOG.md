@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Return JSON `null` for empty successful raw responses, including HTTP 204.
+
 - Restrict credentials and redirects to the intended origin; redact errors and bound response sizes.
 - Replace config files safely and block local config writes during dry-run.
 - Correct JSON output, numeric precision, usage exits, config paths, and version metadata.
