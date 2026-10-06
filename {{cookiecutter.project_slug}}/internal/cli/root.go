@@ -5,8 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net/http"
-	"os"
+	"runtime/debug"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -29,17 +28,17 @@ var (
 )
 
 type globals struct {
-	configPath string
-	baseURL    string
-	asJSON     bool
-	plain      bool
-	quiet      bool
-	noColor    bool
+	configPath  string
+	baseURL     string
+	asJSON      bool
+	plain       bool
+	quiet       bool
+	noColor     bool
 	showVersion bool
-	timeout    time.Duration
-	traceHTTP  bool
-	dryRun     bool
-	noInput    bool
+	timeout     time.Duration
+	traceHTTP   bool
+	dryRun      bool
+	noInput     bool
 }
 
 type runtime struct {
@@ -72,7 +71,8 @@ func Execute(ctx context.Context, args []string, stdin io.Reader, stdout, stderr
 		if !errors.Is(err, errSilent) {
 			_, _ = fmt.Fprintf(stderr, "error: %v\n", err)
 		}
-		if errors.Is(err, errUsage) {
+		_, _, findErr := cmd.Find(args)
+		if errors.Is(err, errUsage) || findErr != nil {
 			return exitUsage
 		}
 		return exitErr
@@ -86,6 +86,7 @@ func newRootCommand(rc *runtime) *cobra.Command {
 		Short:         "{{ cookiecutter.project_description }}",
 		SilenceUsage:  true,
 		SilenceErrors: true,
+		Args:          usageArgs(cobra.NoArgs),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if rc.g.showVersion {
 				return rc.writeVersion()
@@ -94,14 +95,24 @@ func newRootCommand(rc *runtime) *cobra.Command {
 			return errUsage
 		},
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			if commandSkipsClient(cmd) {
-				rc.out = output.New(rc.stdout, rc.stderr, rc.g.asJSON, rc.g.plain, rc.g.quiet, rc.g.noColor)
+			if rc.g.asJSON && rc.g.plain {
+				return fmt.Errorf("%w: choose only one of --json or --plain", errUsage)
+			}
+			if rc.g.timeout <= 0 {
+				return fmt.Errorf("%w: --timeout must be positive", errUsage)
+			}
+			rc.out = output.New(rc.stdout, rc.stderr, rc.g.asJSON, rc.g.plain, rc.g.quiet, rc.g.noColor)
+			if commandSkipsClient(cmd) || rc.g.showVersion {
 				return nil
 			}
 			return rc.initClient()
 		},
 	}
 
+	root.SetFlagErrorFunc(func(cmd *cobra.Command, err error) error {
+		return fmt.Errorf("%w: %v", errUsage, err)
+	})
+	root.Flags().BoolVar(&rc.g.showVersion, "version", false, "print version and exit")
 	flags := root.PersistentFlags()
 	flags.StringVar(&rc.g.configPath, "config", "", "config file path")
 	flags.StringVar(&rc.g.baseURL, "base-url", "", "API base URL override")
@@ -109,10 +120,9 @@ func newRootCommand(rc *runtime) *cobra.Command {
 	flags.BoolVar(&rc.g.plain, "plain", false, "emit stable plain text where available")
 	flags.BoolVarP(&rc.g.quiet, "quiet", "q", false, "suppress non-essential output")
 	flags.BoolVar(&rc.g.noColor, "no-color", false, "disable color")
-	flags.BoolVar(&rc.g.showVersion, "version", false, "print version and exit")
 	flags.DurationVar(&rc.g.timeout, "timeout", 30*time.Second, "HTTP timeout")
 	flags.BoolVar(&rc.g.traceHTTP, "trace-http", false, "log HTTP requests to stderr without secrets")
-	flags.BoolVar(&rc.g.dryRun, "dry-run", false, "refuse non-GET HTTP requests")
+	flags.BoolVar(&rc.g.dryRun, "dry-run", false, "refuse non-GET HTTP requests and local config writes")
 	flags.BoolVar(&rc.g.noInput, "no-input", false, "disable interactive prompts")
 
 	root.AddCommand(newVersionCommand(rc))
@@ -126,9 +136,6 @@ func newRootCommand(rc *runtime) *cobra.Command {
 }
 
 func (rc *runtime) initClient() error {
-	if rc.g.asJSON && rc.g.plain {
-		return fmt.Errorf("%w: choose only one of --json or --plain", errUsage)
-	}
 	cfg, err := config.Load(rc.g.configPath)
 	if err != nil {
 		return err
@@ -140,12 +147,12 @@ func (rc *runtime) initClient() error {
 		return err
 	}
 	rc.cfg = cfg
-	rc.out = output.New(rc.stdout, rc.stderr, rc.g.asJSON, rc.g.plain, rc.g.quiet, rc.g.noColor)
+	v, _, _ := currentVersion()
 	options := []api.Option{
 		api.WithTimeout(rc.g.timeout),
 		api.WithAuth(cfg.AuthHeader, cfg.AuthScheme, cfg.Token),
 		api.WithDryRun(rc.g.dryRun),
-		api.WithUserAgent("{{ cookiecutter.binary_name }}/" + version),
+		api.WithUserAgent("{{ cookiecutter.binary_name }}/" + v),
 	}
 	if rc.g.traceHTTP {
 		options = append(options, api.WithTrace(func(method, path string, status int, duration time.Duration) {
@@ -171,28 +178,52 @@ func newVersionCommand(rc *runtime) *cobra.Command {
 	return &cobra.Command{
 		Use:   "version",
 		Short: "Print version information",
+		Args:  usageArgs(cobra.NoArgs),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return rc.writeVersion()
 		},
 	}
 }
 
+func currentVersion() (string, string, string) {
+	v, c, d := version, commit, date
+	if info, ok := debug.ReadBuildInfo(); ok {
+		if v == "dev" && info.Main.Version != "" && info.Main.Version != "(devel)" {
+			v = info.Main.Version
+		}
+		for _, setting := range info.Settings {
+			switch setting.Key {
+			case "vcs.revision":
+				if c == "unknown" {
+					c = setting.Value
+				}
+			case "vcs.time":
+				if d == "unknown" {
+					d = setting.Value
+				}
+			}
+		}
+	}
+	return v, c, d
+}
+
 func (rc *runtime) writeVersion() error {
+	v, c, d := currentVersion()
 	payload := map[string]string{
-		"version": version,
-		"commit":  commit,
-		"date":    date,
+		"version": v,
+		"commit":  c,
+		"date":    d,
 	}
 	if rc.out.IsJSON() {
 		return rc.out.JSON(payload)
 	}
 	if rc.out.IsPlain() {
-		rc.out.Printf("%s\n", version)
+		rc.out.Printf("%s\n", v)
 		return nil
 	}
-	rc.out.Printf("{{ cookiecutter.binary_name }} version %s\n", version)
-	rc.out.Printf("commit: %s\n", commit)
-	rc.out.Printf("built:  %s\n", date)
+	rc.out.Printf("{{ cookiecutter.binary_name }} version %s\n", v)
+	rc.out.Printf("commit: %s\n", c)
+	rc.out.Printf("built:  %s\n", d)
 	return nil
 }
 
@@ -233,23 +264,6 @@ func usageArgs(fn cobra.PositionalArgs) cobra.PositionalArgs {
 	}
 }
 
-func apiExitCode(err error) int {
-	var apiErr *api.APIError
-	if errors.As(err, &apiErr) {
-		if apiErr.Status == http.StatusUnauthorized || apiErr.Status == http.StatusForbidden {
-			return exitErr
-		}
-	}
-	return exitErr
-}
-
 func init() {
 	cobra.EnableCommandSorting = false
-}
-
-func envOrDefault(key, fallback string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
-	}
-	return fallback
 }

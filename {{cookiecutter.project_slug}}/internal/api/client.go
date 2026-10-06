@@ -17,6 +17,8 @@ const (
 	DefaultAuthHeader = "{{ cookiecutter.api_auth_header }}"
 	DefaultAuthScheme = "{{ cookiecutter.api_auth_scheme }}"
 	DefaultUserAgent  = "{{ cookiecutter.binary_name }}/dev"
+	// Buffer ordinary API responses; stream larger downloads in provider code.
+	maxResponseBytes = 64 << 20
 )
 
 type Client struct {
@@ -35,7 +37,8 @@ type Option func(*Client)
 func WithHTTPClient(httpClient *http.Client) Option {
 	return func(c *Client) {
 		if httpClient != nil {
-			c.httpClient = httpClient
+			copy := *httpClient
+			c.httpClient = &copy
 		}
 	}
 }
@@ -91,6 +94,19 @@ func New(baseURL string, opts ...Option) *Client {
 	for _, opt := range opts {
 		opt(c)
 	}
+	redirect := c.httpClient.CheckRedirect
+	c.httpClient.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		if len(via) >= 10 {
+			return fmt.Errorf("stopped after 10 redirects")
+		}
+		if len(via) > 0 && !sameOrigin(req.URL, via[0].URL) {
+			return fmt.Errorf("refusing cross-origin redirect")
+		}
+		if redirect != nil {
+			return redirect(req, via)
+		}
+		return nil
+	}
 	return c
 }
 
@@ -141,7 +157,8 @@ func (c *Client) Do(ctx context.Context, method, requestPath string, query url.V
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}
-	if c.token != "" && c.authHeader != "" {
+	base, _ := url.Parse(c.baseURL)
+	if c.token != "" && c.authHeader != "" && sameOrigin(req.URL, base) {
 		value := c.token
 		if c.authScheme != "" {
 			value = c.authScheme + " " + c.token
@@ -152,24 +169,27 @@ func (c *Client) Do(ctx context.Context, method, requestPath string, query url.V
 	start := time.Now()
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("request failed: %w", err)
+		return nil, fmt.Errorf("request failed: %w", &redactedError{err: err, token: c.token})
 	}
 	defer resp.Body.Close()
 
-	data, err := io.ReadAll(resp.Body)
+	data, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseBytes+1))
 	if err != nil {
 		return nil, fmt.Errorf("read response: %w", err)
 	}
+	if len(data) > maxResponseBytes {
+		return nil, fmt.Errorf("response exceeds the 64 MiB limit")
+	}
 	if c.trace != nil {
-		c.trace(method, req.URL.Path, resp.StatusCode, time.Since(start))
+		c.trace(method, redact(req.URL.Path, c.token), resp.StatusCode, time.Since(start))
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return data, &APIError{
 			Status:  resp.StatusCode,
 			Method:  method,
-			Path:    req.URL.Path,
+			Path:    redact(req.URL.Path, c.token),
 			Body:    data,
-			Message: extractErrorMessage(data),
+			Message: redact(extractErrorMessage(data), c.token),
 		}
 	}
 	return data, nil
@@ -213,6 +233,43 @@ func (c *Client) url(requestPath string, query url.Values) (string, error) {
 	}
 	return u.String(), nil
 }
+
+func sameOrigin(a, b *url.URL) bool {
+	if a == nil || b == nil {
+		return false
+	}
+	return strings.EqualFold(a.Scheme, b.Scheme) &&
+		strings.EqualFold(a.Hostname(), b.Hostname()) && effectivePort(a) == effectivePort(b)
+}
+
+func effectivePort(u *url.URL) string {
+	if port := u.Port(); port != "" {
+		if normalized := strings.TrimLeft(port, "0"); normalized != "" {
+			return normalized
+		}
+		return "0"
+	}
+	if strings.EqualFold(u.Scheme, "https") {
+		return "443"
+	}
+	return "80"
+}
+
+func redact(message, token string) string {
+	if token == "" {
+		return message
+	}
+	return strings.ReplaceAll(message, token, "[REDACTED]")
+}
+
+// Preserve errors.Is/As without exposing credentials in a transport error.
+type redactedError struct {
+	err   error
+	token string
+}
+
+func (e *redactedError) Error() string { return redact(e.err.Error(), e.token) }
+func (e *redactedError) Unwrap() error { return e.err }
 
 func mergeQuery(dst, src url.Values) url.Values {
 	for key, values := range src {

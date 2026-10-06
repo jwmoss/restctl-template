@@ -24,23 +24,30 @@ func newConfigShowCommand(rc *runtime) *cobra.Command {
 	return &cobra.Command{
 		Use:   "show",
 		Short: "Show effective configuration with secrets redacted",
+		Args:  usageArgs(cobra.NoArgs),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := config.Load(rc.g.configPath)
+			path := rc.g.configPath
+			if path == "" {
+				path = config.DefaultPath()
+			}
+			cfg, err := config.Load(path)
 			if err != nil {
 				return err
 			}
 			if rc.g.baseURL != "" {
 				cfg.BaseURL = rc.g.baseURL
 			}
+			redacted := cfg.Redacted()
+			redacted["path"] = path
 			if rc.out.IsJSON() {
-				return rc.out.JSON(cfg.Redacted())
+				return rc.out.JSON(redacted)
 			}
 			rc.out.Table([]string{"KEY", "VALUE"}, [][]string{
 				{"base_url", cfg.BaseURL},
 				{"token", cfg.Redacted()["token"]},
 				{"auth_header", cfg.AuthHeader},
 				{"auth_scheme", cfg.AuthScheme},
-				{"path", config.DefaultPath()},
+				{"path", path},
 			})
 			return nil
 		},
@@ -56,7 +63,11 @@ func newConfigInitCommand(rc *runtime) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "init",
 		Short: "Create a config file",
+		Args:  usageArgs(cobra.NoArgs),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if rc.g.dryRun {
+				return fmt.Errorf("dry-run: refusing to write config")
+			}
 			path := rc.g.configPath
 			if path == "" {
 				path = config.DefaultPath()
@@ -75,8 +86,11 @@ func newConfigInitCommand(rc *runtime) *cobra.Command {
 				}
 				cfg.Token = strings.TrimSpace(string(data))
 			}
-			if err := config.Save(path, cfg); err != nil {
+			if err := config.Save(path, cfg, force); err != nil {
 				return err
+			}
+			if rc.out.IsJSON() {
+				return rc.out.JSON(map[string]string{"path": path, "status": "written"})
 			}
 			rc.out.Success("config written")
 			rc.out.Printf("%s\n", path)

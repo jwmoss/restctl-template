@@ -11,6 +11,7 @@ func newDoctorCommand(rc *runtime) *cobra.Command {
 	return &cobra.Command{
 		Use:   "doctor",
 		Short: "Verify configuration and API connectivity",
+		Args:  usageArgs(cobra.NoArgs),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			data, err := rc.client.Do(cmd.Context(), http.MethodGet, "{{ cookiecutter.health_path }}", nil, nil)
 			if err != nil {

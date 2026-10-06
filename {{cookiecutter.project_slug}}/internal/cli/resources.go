@@ -13,6 +13,7 @@ func newResourcesCommand(rc *runtime) *cobra.Command {
 		Use:     "list",
 		Aliases: []string{"ls"},
 		Short:   "List {{ cookiecutter.resource_name_plural }}",
+		Args:    usageArgs(cobra.NoArgs),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			resources, err := rc.client.ListResources(cmd.Context())
 			if err != nil {

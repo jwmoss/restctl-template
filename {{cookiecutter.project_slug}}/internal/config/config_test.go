@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -30,14 +31,14 @@ func TestLoadEnvOverridesFile(t *testing.T) {
 func TestSaveWritesConfig(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "nested", "config.yaml")
 	cfg := Config{BaseURL: "https://api.example.com", Token: "token"}
-	if err := Save(path, cfg); err != nil {
+	if err := Save(path, cfg, false); err != nil {
 		t.Fatal(err)
 	}
 	info, err := os.Stat(path)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := info.Mode().Perm(); got != 0600 {
+	if got := info.Mode().Perm(); runtime.GOOS != "windows" && got != 0600 {
 		t.Fatalf("mode = %v", got)
 	}
 }

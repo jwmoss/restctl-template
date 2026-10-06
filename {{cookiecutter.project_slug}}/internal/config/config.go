@@ -11,7 +11,7 @@ import (
 
 const (
 	AppName           = "{{ cookiecutter.binary_name }}"
-	EnvPrefix        = "{{ cookiecutter.env_prefix }}"
+	EnvPrefix         = "{{ cookiecutter.env_prefix }}"
 	DefaultBaseURL    = "{{ cookiecutter.api_base_url }}"
 	DefaultAuthHeader = "{{ cookiecutter.api_auth_header }}"
 	DefaultAuthScheme = "{{ cookiecutter.api_auth_scheme }}"
@@ -62,7 +62,7 @@ func Load(path string) (*Config, error) {
 	return &cfg, nil
 }
 
-func Save(path string, cfg Config) error {
+func Save(path string, cfg Config, overwrite bool) error {
 	if path == "" {
 		path = DefaultPath()
 	}
@@ -74,8 +74,38 @@ func Save(path string, cfg Config) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
 		return fmt.Errorf("create config directory: %w", err)
 	}
-	if err := os.WriteFile(path, data, 0600); err != nil {
+	info, err := os.Lstat(path)
+	if err == nil {
+		if !info.Mode().IsRegular() {
+			return fmt.Errorf("refusing non-regular config path %s", path)
+		}
+		if !overwrite {
+			return fmt.Errorf("config already exists at %s; use --force to overwrite", path)
+		}
+	} else if !os.IsNotExist(err) {
+		return fmt.Errorf("inspect config file: %w", err)
+	}
+	file, err := os.CreateTemp(filepath.Dir(path), ".config-*")
+	if err != nil {
+		return fmt.Errorf("create private config: %w", err)
+	}
+	defer os.Remove(file.Name())
+	if _, err := file.Write(data); err != nil {
+		_ = file.Close()
 		return fmt.Errorf("write config file: %w", err)
+	}
+	if err := file.Close(); err != nil {
+		return err
+	}
+	if overwrite {
+		// Replace the directory entry rather than follow a raced symlink.
+		err = os.Rename(file.Name(), path)
+	} else {
+		// Publish only if another process has not created the destination.
+		err = os.Link(file.Name(), path)
+	}
+	if err != nil {
+		return fmt.Errorf("publish config file: %w", err)
 	}
 	return nil
 }
