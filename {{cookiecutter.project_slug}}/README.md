@@ -77,7 +77,8 @@ New config files use mode `0600` on POSIX systems; Windows uses inherited direct
 The HTTP client sends credentials only to the configured origin.
 It rejects cross-origin redirects and buffers at most 64 MiB per response.
 Provider code must stream larger downloads.
-`raw --json` preserves numeric values and rejects non-JSON responses.
+`raw --json` preserves numeric values and returns `null` for empty successful responses.
+It rejects other non-JSON response bodies.
 
 ## Usage
 
