@@ -3,7 +3,6 @@ package cli
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"net/url"
 	"os"
 	"strings"
@@ -27,18 +26,20 @@ func newRawCommand(rc *runtime) *cobra.Command {
 				return fmt.Errorf("%w: use only one of --data or --file", errUsage)
 			}
 			if dataFlag != "" {
-				if err := json.Unmarshal([]byte(dataFlag), &body); err != nil {
-					return fmt.Errorf("parse --data JSON: %w", err)
+				if !json.Valid([]byte(dataFlag)) {
+					return fmt.Errorf("%w: --data must contain JSON", errUsage)
 				}
+				body = json.RawMessage(dataFlag)
 			}
 			if fileFlag != "" {
 				data, err := os.ReadFile(fileFlag)
 				if err != nil {
 					return fmt.Errorf("read --file: %w", err)
 				}
-				if err := json.Unmarshal(data, &body); err != nil {
-					return fmt.Errorf("parse --file JSON: %w", err)
+				if !json.Valid(data) {
+					return fmt.Errorf("%w: --file must contain JSON", errUsage)
 				}
+				body = json.RawMessage(data)
 			}
 			query, err := parseQuery(queryFlag)
 			if err != nil {
@@ -48,12 +49,11 @@ func newRawCommand(rc *runtime) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if rc.out.IsJSON() && json.Valid(resp) {
-				var decoded any
-				if err := json.Unmarshal(resp, &decoded); err != nil {
-					return err
+			if rc.out.IsJSON() {
+				if !json.Valid(resp) {
+					return fmt.Errorf("response is not JSON; omit --json to retrieve raw bytes")
 				}
-				return rc.out.JSON(decoded)
+				return rc.out.JSON(json.RawMessage(resp))
 			}
 			if len(resp) > 0 {
 				rc.out.Printf("%s", string(resp))
@@ -67,7 +67,6 @@ func newRawCommand(rc *runtime) *cobra.Command {
 	cmd.Flags().StringVar(&dataFlag, "data", "", "JSON request body")
 	cmd.Flags().StringVar(&fileFlag, "file", "", "path to JSON request body")
 	cmd.Flags().StringArrayVar(&queryFlag, "query", nil, "query parameter in key=value form")
-	_ = http.MethodGet
 	return cmd
 }
 

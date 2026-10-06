@@ -1,14 +1,9 @@
-.PHONY: render test clean
+.PHONY: render test
 
-SMOKE_DIR ?= /tmp/restctl-template-smoke
-SMOKE_PROJECT ?= acme-api-cli
+SMOKE_DIR ?= $(shell mktemp -d)
 
 render:
-	rm -rf "$(SMOKE_DIR)/$(SMOKE_PROJECT)"
-	uvx cookiecutter --no-input -o "$(SMOKE_DIR)" .
+	uvx --from cookiecutter==2.7.1 cookiecutter --no-input -o "$(SMOKE_DIR)" .
 
-test: render
-	cd "$(SMOKE_DIR)/$(SMOKE_PROJECT)" && git init -q && git add . && git -c user.email=smoke@example.com -c user.name=smoke commit -qm "Initial commit" && make check
-
-clean:
-	rm -rf "$(SMOKE_DIR)/$(SMOKE_PROJECT)"
+test:
+	uv run --no-project --with cookiecutter==2.7.1 python scripts/check.py

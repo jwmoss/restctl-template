@@ -1,24 +1,3 @@
-import os
-import pathlib
-import shutil
-
-
-REMOVE_PATHS = [
-    "{% if cookiecutter.homebrew_package_type == 'none' %}.github/workflows/release.yml{% endif %}",
-]
-
-for raw_path in REMOVE_PATHS:
-    path = raw_path.strip()
-    if not path:
-        continue
-    p = pathlib.Path(path)
-    if not p.exists():
-        continue
-    if p.is_dir():
-        shutil.rmtree(p)
-    else:
-        p.unlink()
-
 print("")
 print("Generated {{ cookiecutter.project_slug }}")
 print("")

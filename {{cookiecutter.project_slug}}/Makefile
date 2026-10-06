@@ -1,29 +1,39 @@
-.PHONY: build test vet fmt tidy check clean release-snapshot
+.PHONY: build test vet fmt fmt-check tidy tidy-check check release-tool-check release-check release-snapshot
 
 BINARY ?= {{ cookiecutter.binary_name }}
 PKG := ./...
+GORELEASER_VERSION := $(shell cat .goreleaser-version)
+GORELEASER := goreleaser
 
 build:
 	mkdir -p bin
 	go build -trimpath -o bin/$(BINARY) ./cmd/$(BINARY)
 
 test:
-	go test -count=1 $(PKG)
+	go test -count=1 -timeout=2m $(PKG)
 
 vet:
 	go vet $(PKG)
 
 fmt:
-	gofmt -w $$(find . -name '*.go' -not -path './vendor/*')
+	gofmt -w $$(find cmd internal tests -name '*.go')
+
+fmt-check:
+	@test -z "$$(gofmt -l cmd internal tests)" || { gofmt -l cmd internal tests; exit 1; }
 
 tidy:
 	go mod tidy
 
-check: fmt tidy vet test build
-	@if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then git diff --exit-code -- go.mod go.sum; fi
+tidy-check:
+	go mod tidy -diff
 
-release-snapshot:
-	goreleaser release --snapshot --clean
+check: fmt-check tidy-check vet test build
 
-clean:
-	rm -rf bin dist
+release-tool-check:
+	@$(GORELEASER) --version | grep -Eq "^GitVersion: +v?$(subst .,[.],$(GORELEASER_VERSION:v%=%))$$" || { echo "Install GoReleaser $(GORELEASER_VERSION)"; exit 1; }
+
+release-check: release-tool-check
+	$(GORELEASER) check{% if cookiecutter.homebrew_package_type == "formula" %} || test "$$?" -eq 2{% endif %}
+
+release-snapshot: release-tool-check
+	$(GORELEASER) release --snapshot --clean
