@@ -38,13 +38,19 @@ The generated CLI follows the Command Line Interface Guidelines baseline:
 The generated REST client handles:
 
 - base URL normalization
-- auth header injection
+- auth headers restricted to the configured origin
+- cross-origin redirect refusal
+- credential redaction in error text
 - JSON request encoding
 - JSON response decoding
-- status-code errors with response body snippets
+- status-code errors with redacted server messages
+- a 64 MiB response limit
 - timeout control
 - dry-run refusal for non-GET methods
-- optional HTTP tracing without dumping auth headers
+
+The CLI also refuses local config writes during dry-run.
+New provider auth flows and secondary transports must preserve this contract.
+The client can trace requests without auth headers.
 
 ## Terminal Behavior
 
@@ -56,4 +62,5 @@ The generated REST client handles:
 
 Cookiecutter keeps the repository repeatable without forcing a custom generator
 binary. It also makes CI straightforward: render the default project and run its
-normal Go checks.
+normal Go checks. The self-test checks every Homebrew option.
+Generated CI checks Linux, macOS, and Windows before release publication.

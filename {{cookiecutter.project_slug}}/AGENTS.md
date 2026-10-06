@@ -16,7 +16,9 @@ helpers small and reusable.
 - Do not print token values.
 - Do not add token/password command-line flags unless there is a documented
   reason and a safer path is still available.
-- Mutating commands must respect `--dry-run`.
+- Guard network mutations and local config or credential writes with `--dry-run`.
+- Pass timeout, trace, and safety options to every provider transport.
+- Keep raw JSON numbers exact. Use `json.RawMessage` instead of `any` for pass-through payloads.
 - Commands that need credentials should explain the missing env/config value in
   the error.
 
@@ -28,8 +30,11 @@ Run before handoff:
 make check
 ```
 
-For release config changes, also run if GoReleaser is installed:
+For release config changes, use the pinned release tool:
 
 ```bash
-goreleaser check
+make release-check
 ```
+
+Keep CLI flow tests at the subprocess boundary in `tests/`.
+Use local HTTP fixtures and synthetic credentials.

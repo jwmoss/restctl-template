@@ -47,11 +47,13 @@ Initialize a config file:
 {{ cookiecutter.binary_name }} config init --base-url {{ cookiecutter.api_base_url }}
 ```
 
-Config path:
+The default path uses the operating system config directory:
 
-```text
-$XDG_CONFIG_HOME/{{ cookiecutter.binary_name }}/{{ cookiecutter.config_filename }}
-```
+- Linux: `$XDG_CONFIG_HOME/{{ cookiecutter.binary_name }}/{{ cookiecutter.config_filename }}`, or `~/.config` when unset.
+- macOS: `~/Library/Application Support/{{ cookiecutter.binary_name }}/{{ cookiecutter.config_filename }}`.
+- Windows: `%AppData%\\{{ cookiecutter.binary_name }}\\{{ cookiecutter.config_filename }}`.
+
+Use `--config` to select another path. `config show` reports the selected path.
 
 Environment variables:
 
@@ -68,8 +70,14 @@ Precedence:
 flags > environment > config file > defaults
 ```
 
-Tokens are intentionally not accepted as command-line flags by default. Use the
-environment, a `0600` config file, or stdin-backed setup.
+Use environment variables, private config files, or stdin for tokens.
+Config writes replace complete files and reject destination symlinks.
+New config files use mode `0600` on POSIX systems; Windows uses inherited directory permissions.
+
+The HTTP client sends credentials only to the configured origin.
+It rejects cross-origin redirects and buffers at most 64 MiB per response.
+Provider code must stream larger downloads.
+`raw --json` preserves numeric values and rejects non-JSON responses.
 
 ## Usage
 
@@ -98,7 +106,7 @@ printf '%s\n' "$TOKEN" | {{ cookiecutter.binary_name }} config init --token-stdi
 | `--no-color` | Disable color |
 | `--timeout` | HTTP timeout |
 | `--trace-http` | Log HTTP method/path/status to stderr |
-| `--dry-run` | Refuse non-GET HTTP requests |
+| `--dry-run` | Refuse non-GET HTTP requests and local config writes |
 | `--no-input` | Disable interactive prompts |
 
 ## Exit Codes
@@ -115,17 +123,31 @@ printf '%s\n' "$TOKEN" | {{ cookiecutter.binary_name }} config init --token-stdi
 make check
 ```
 
+Checks do not change source files. Use `make fmt` or `make tidy` to apply changes.
+`go test ./...` includes compiled-binary flow tests with isolated config paths and local HTTP fixtures.
+Tests use synthetic credentials and require no production access.
+
 ## Release
 
 Tag a semver release:
 
 ```bash
+git switch main
+git pull --ff-only
+make release-check
 git tag v0.1.0
-git push origin main
 git push origin v0.1.0
 ```
 
-The release workflow uses GoReleaser to publish archives and checksums.
+Merge changes through a pull request before you tag a release.
+The release workflow requires Linux, macOS, Windows, and quality checks before publication.
+`.goreleaser-version` pins the release tool. Install that version before you run release targets.
+`go install` builds use module metadata for version output.
+{% if cookiecutter.homebrew_package_type == "formula" %}
+The formula option uses deprecated GoReleaser `brews` support.
+`make release-check` permits its deprecation-only exit code 2, but still rejects invalid configuration.
+Use `cask` for new tools.
+{% endif %}
 {% if cookiecutter.homebrew_package_type != "none" -%}
 Set `HOMEBREW_TAP_TOKEN` before the first tagged release so GoReleaser can
 update `{{ cookiecutter.homebrew_tap_owner }}/{{ cookiecutter.homebrew_tap_repo }}`.

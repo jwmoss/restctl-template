@@ -12,12 +12,13 @@ The generated project includes:
 - Cobra command structure with `config`, `doctor`, `raw`, example resource,
   `completion`, `version`, and root `--version` support.
 - A small internal REST client with auth headers, request timeouts, JSON helpers,
-  dry-run blocking for mutating calls, API error wrapping, and optional HTTP
-  tracing.
+  origin-scoped credentials, redirect restrictions, bounded responses, dry-run
+  guards, redacted errors, and optional HTTP traces.
 - Config loading from flags, environment variables, and a YAML config file.
 - Human, JSON, and plain output helpers.
-- Go tests for the client, config loader, output formatter, and CLI command
-  wiring.
+- Package tests and compiled-binary flow tests with local HTTP fixtures.
+- Private config replacement that rejects destination symlinks.
+- CI checks on Linux, macOS, and Windows before release publication.
 - GitHub Actions CI, Dependabot, issue templates, pull request template,
   CODEOWNERS, AGENTS.md, SECURITY.md, CHANGELOG.md, and MIT license scaffolding.
 - GoReleaser v2 release config with Homebrew tap publishing support.
@@ -78,11 +79,19 @@ The most important prompts are:
 
 ## Development
 
+Install Go, uv, and the GoReleaser version from
+`{{cookiecutter.project_slug}}/.goreleaser-version`.
+
 Run the template self-test:
 
 ```bash
 make test
 ```
+
+The self-test checks all three Homebrew options, generated workflows, and CLI behavior.
+It uses temporary directories and synthetic credentials.
+It never calls a production API.
+Formula checks permit GoReleaser exit code 2 for the documented legacy deprecation.
 
 Render only:
 
@@ -98,6 +107,9 @@ projects, then push semver tags such as `v0.1.0`.
 
 See [docs/homebrew.md](docs/homebrew.md) for the generated release contract.
 See [docs/ecosystem.md](docs/ecosystem.md) for the longer-term ecosystem shape.
+See [docs/downstream.md](docs/downstream.md) for shared fixes and remaining differences across existing CLI repositories.
+
+Template changes affect new projects only. Apply the linked fixes to existing tools separately.
 
 ## License
 

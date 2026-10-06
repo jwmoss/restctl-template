@@ -29,12 +29,16 @@ The token needs contents write access to the tap repository.
 ## Release Flow
 
 ```bash
+git switch main
+git pull --ff-only
+make release-check
 git tag v0.1.0
-git push origin main
 git push origin v0.1.0
 ```
 
-The generated release workflow runs GoReleaser on tags. GoReleaser builds
+Merge changes through a pull request before you tag a release.
+The generated release workflow requires reusable CI checks before it runs GoReleaser.
+`.goreleaser-version` pins the release tool. GoReleaser builds
 multi-platform archives, creates checksums, publishes a GitHub release, and
 updates the Homebrew tap.
 
@@ -50,4 +54,9 @@ brew install --cask jwmoss/tap/mytool
 
 Set `homebrew_package_type` to `formula` when generating a project if you need
 the older `brew install jwmoss/tap/mytool` formula layout. GoReleaser still
-understands that shape, but reports it as deprecated in current v2 releases.
+understands that shape, but its check returns exit code 2 for valid deprecated configuration.
+Formula-mode checks accept that code only. Invalid configuration still fails.
+Use `cask` for new tools.
+
+Set `homebrew_package_type` to `none` to skip tap publication.
+GitHub releases remain available and require no tap token.

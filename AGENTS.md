@@ -17,8 +17,9 @@ code in the template only when it is reusable across ordinary REST APIs.
   traces, and diagnostics go to stderr.
 - Keep `--json`, `--plain`, `--quiet`, `--no-color`, `--timeout`, `--trace-http`,
   and `--dry-run` working consistently.
-- Do not add token or password flags by default. Prefer env vars, config files
-  with mode `0600`, stdin prompts, or future OS keychain integrations.
+- Use environment variables, private config files, or stdin for credentials.
+- Restrict auth headers and redirects to the intended origin.
+- Apply dry-run guards before network mutations or local file writes.
 - Avoid generated app-specific assumptions. The default resource command is an
   example, not a framework boundary.
 - When changing template variables, update `cookiecutter.json`, hooks, README,
@@ -42,10 +43,11 @@ cd /tmp/acme-api-cli
 make check
 ```
 
-If GoReleaser is installed, also run:
+Use the GoReleaser version from the generated `.goreleaser-version` file.
+For release changes, also run:
 
 ```bash
-goreleaser check
+make release-check
 ```
 
 ## Release Model
