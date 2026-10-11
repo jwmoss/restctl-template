@@ -125,8 +125,18 @@ make check
 ```
 
 Checks do not change source files. Use `make fmt` or `make tidy` to apply changes.
-`go test ./...` includes compiled-binary flow tests with isolated config paths and local HTTP fixtures.
-Tests use synthetic credentials and require no production access.
+CI runs formatting, dependency, workflow, vulnerability, and build checks.
+It does not use production credentials.
+
+After you configure the real API, run the read-only end-to-end test:
+
+```bash
+{{ cookiecutter.env_prefix }}_LIVE=1 make test
+```
+
+The test builds the executable and checks the real health and resource-list endpoints.
+Set the generated endpoint paths to your API before you run it.
+The suite has no unit tests, mocks, or fake servers.
 
 ## Release
 

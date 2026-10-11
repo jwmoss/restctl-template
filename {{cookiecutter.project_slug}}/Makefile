@@ -10,10 +10,10 @@ build:
 	go build -trimpath -o bin/$(BINARY) ./cmd/$(BINARY)
 
 test:
-	go test -count=1 -timeout=2m $(PKG)
+	go test -tags=live -count=1 -timeout=2m ./tests
 
 vet:
-	go vet $(PKG)
+	go vet -tags=live $(PKG)
 
 fmt:
 	gofmt -w $$(find cmd internal tests -name '*.go')
@@ -27,7 +27,7 @@ tidy:
 tidy-check:
 	go mod tidy -diff
 
-check: fmt-check tidy-check vet test build
+check: fmt-check tidy-check vet build
 
 release-tool-check:
 	@$(GORELEASER) --version | grep -Eq "^GitVersion: +v?$(subst .,[.],$(GORELEASER_VERSION:v%=%))$$" || { echo "Install GoReleaser $(GORELEASER_VERSION)"; exit 1; }

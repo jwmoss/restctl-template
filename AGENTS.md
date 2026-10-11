@@ -50,6 +50,10 @@ For release changes, also run:
 make release-check
 ```
 
+Keep only live end-to-end tests and static checks in generated projects.
+The template self-check renders projects and validates builds, workflows, and release configuration.
+Do not add unit tests, mocks, or fake-server suites.
+
 ## Release Model
 
 This template repo itself is released by Git tags. Generated projects own their
