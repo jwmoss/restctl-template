@@ -16,7 +16,7 @@ The generated project includes:
   guards, redacted errors, and optional HTTP traces.
 - Config loading from flags, environment variables, and a YAML config file.
 - Human, JSON, and plain output helpers.
-- Package tests and compiled-binary flow tests with local HTTP fixtures.
+- Opt-in live end-to-end tests through the compiled executable.
 - Private config replacement that rejects destination symlinks.
 - CI checks on Linux, macOS, and Windows before release publication.
 - GitHub Actions CI, Dependabot, issue templates, pull request template,
@@ -90,9 +90,10 @@ Run the template self-test:
 make test
 ```
 
-The self-test checks all three Homebrew options, generated workflows, and CLI behavior.
-It uses temporary directories and synthetic credentials.
-It never calls a production API.
+The self-test renders all three Homebrew options and runs static, build, and release checks.
+It compiles the live test code without calling a production API.
+Generated projects run live end-to-end tests separately with their configured service.
+Unit tests, mocks, and fake-server suites are excluded.
 Formula checks permit GoReleaser exit code 2 for the documented legacy deprecation.
 
 Render only:
@@ -109,6 +110,7 @@ projects, then push semver tags such as `v0.1.0`.
 
 See [docs/homebrew.md](docs/homebrew.md) for the generated release contract.
 See [docs/ecosystem.md](docs/ecosystem.md) for the longer-term ecosystem shape.
+See [docs/complexity.md](docs/complexity.md) for optional cccc reports and CI limits.
 See [docs/downstream.md](docs/downstream.md) for shared fixes and remaining differences across existing CLI repositories.
 
 Template changes affect new projects only. Apply the linked fixes to existing tools separately.

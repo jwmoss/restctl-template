@@ -36,5 +36,7 @@ For release config changes, use the pinned release tool:
 make release-check
 ```
 
-Keep CLI flow tests at the subprocess boundary in `tests/`.
-Use local HTTP fixtures and synthetic credentials.
+Keep only live end-to-end tests and static checks.
+Do not add unit tests, mocks, synthetic credentials, or fake servers.
+Run `make test` with the live opt-in variable after you configure a real API.
+CI runs static checks and builds without production credentials.

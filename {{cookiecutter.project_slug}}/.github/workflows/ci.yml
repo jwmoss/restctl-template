@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: {% raw %}${{ github.ref_type != 'tag' }}{% endraw %}
 
 jobs:
-  test:
+  build:
     runs-on: {% raw %}${{ matrix.os }}{% endraw %}
     timeout-minutes: 15
     strategy:
@@ -40,15 +40,10 @@ jobs:
           if ($unformatted) { throw "Unformatted Go files: $unformatted" }
           go mod tidy -diff
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          go vet ./...
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          go test -count=1 -timeout=2m ./...
+          go vet -tags=live ./...
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           go build ./...
           exit $LASTEXITCODE
-      - name: Race check
-        if: runner.os == 'Linux'
-        run: go test -race -timeout=2m ./...
 
   quality:
     runs-on: ubuntu-latest

@@ -1,6 +1,9 @@
 # Downstream consistency and migration
 
-Source snapshot: 2026-10-06. This report compares five public CLI repositories.
+Historical source snapshot: 2026-10-06.
+
+Testing policy as of 2026-10-10: retain live end-to-end tests and static checks only.
+The historical test recommendations below describe the prior policy. This report compares five public CLI repositories.
 Template changes affect new projects only. These follow-up pull requests apply the shared fixes to existing repositories:
 
 | Repository | Follow-up |
