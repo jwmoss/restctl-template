@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [0.1.0] - 2026-10-10
+
 - Keep live end-to-end tests and static checks; remove unit and fake-server tests.
 - Document cccc reports, baseline metrics, and optional complexity limits.
 - Return JSON `null` for empty successful raw responses, including HTTP 204.
